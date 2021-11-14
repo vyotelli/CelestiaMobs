@@ -2,13 +2,15 @@
 This plugin is a fork of EliteMobs. Do not distribute. Only for use on the Celestia.quest server.
 
 Celestia.Quest is a registered trademark in the state of California.
-CelestiaMobs is licensed under GNU General Public License v3.0
- Copyright (C) 2007 Free Software Foundation, Inc. <https://fsf.org/>
+
 
 # Original Source
 Original Source by MagmaGuy/EliteMobs
+CelestiaMobs is licensed under GNU General Public License v3.0
+ Copyright (C) 2007 Free Software Foundation, Inc. <https://fsf.org/>
 
 # Copyright
+
 Our license and copyright filings can be found in the state 
 directory categorized under USC Title 17.
 
