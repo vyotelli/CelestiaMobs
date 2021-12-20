@@ -10,6 +10,9 @@ import org.bukkit.entity.LivingEntity;
 import org.bukkit.scheduler.BukkitRunnable;
 
 public class CustomBossMount {
+    private CustomBossMount() {
+    }
+
     public static CustomBossEntity generateMount(CustomBossEntity customBossEntity) {
         if (customBossEntity.customBossesConfigFields.getMountedEntity() == null) return null;
         try {
@@ -33,6 +36,7 @@ public class CustomBossMount {
                 mountEntity.setSpawnLocation(customBossEntity.getLivingEntity().getLocation());
                 mountEntity.setBypassesProtections(customBossEntity.getBypassesProtections());
                 mountEntity.setPersistent(false);
+                mountEntity.setMount(true);
                 mountEntity.spawn(false);
 
                 new BukkitRunnable() {

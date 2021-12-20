@@ -5,6 +5,7 @@ import com.magmaguy.elitemobs.combatsystem.EliteProjectile;
 import com.magmaguy.elitemobs.config.powers.PowersConfig;
 import com.magmaguy.elitemobs.entitytracker.EntityTracker;
 import com.magmaguy.elitemobs.mobconstructor.EliteEntity;
+import com.magmaguy.elitemobs.powers.meta.CombatEnterScanPower;
 import com.magmaguy.elitemobs.utils.EnderDragonPhaseSimplifier;
 import org.bukkit.Location;
 import org.bukkit.Particle;
@@ -17,7 +18,7 @@ import org.bukkit.util.Vector;
 import java.util.ArrayList;
 import java.util.concurrent.ThreadLocalRandom;
 
-public class EnderDragonDiscoFireballs extends MajorCombatEnterScanningPower {
+public class EnderDragonDiscoFireballs extends CombatEnterScanPower {
 
     int randomTiltSeed;
     private ArrayList<Vector> relativeLocationOffsets;
@@ -61,15 +62,15 @@ public class EnderDragonDiscoFireballs extends MajorCombatEnterScanningPower {
             @Override
             public void run() {
 
-                if (eliteEntity.getLivingEntity().getType().equals(EntityType.ENDER_DRAGON))
-                    ((EnderDragon) eliteEntity.getLivingEntity()).setPhase(EnderDragon.Phase.SEARCH_FOR_BREATH_ATTACK_TARGET);
-
                 if (doExit(eliteEntity) ||
                         eliteEntity.getLivingEntity().getType().equals(EntityType.ENDER_DRAGON) &&
                                 !EnderDragonPhaseSimplifier.isLanded(((EnderDragon) eliteEntity.getLivingEntity()).getPhase())) {
                     cancel();
                     return;
                 }
+
+                if (eliteEntity.getLivingEntity().getType().equals(EntityType.ENDER_DRAGON))
+                    ((EnderDragon) eliteEntity.getLivingEntity()).setPhase(EnderDragon.Phase.SEARCH_FOR_BREATH_ATTACK_TARGET);
 
                 if (counter == 0) {
                     //todo: reset fields if needed

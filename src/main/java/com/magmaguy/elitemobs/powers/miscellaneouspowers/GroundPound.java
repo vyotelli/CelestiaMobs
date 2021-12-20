@@ -4,7 +4,7 @@ import com.magmaguy.elitemobs.MetadataHandler;
 import com.magmaguy.elitemobs.api.EliteMobDamagedByPlayerEvent;
 import com.magmaguy.elitemobs.config.powers.PowersConfig;
 import com.magmaguy.elitemobs.mobconstructor.EliteEntity;
-import com.magmaguy.elitemobs.powers.MinorPower;
+import com.magmaguy.elitemobs.powers.meta.MinorPower;
 import com.magmaguy.elitemobs.utils.NonSolidBlockTypes;
 import org.bukkit.Location;
 import org.bukkit.Particle;
@@ -37,7 +37,7 @@ public class GroundPound extends MinorPower implements Listener {
     public void onEliteDamaged(EliteMobDamagedByPlayerEvent event) {
         GroundPound groundPound = (GroundPound) event.getEliteMobEntity().getPower(this);
         if (groundPound == null) return;
-        if (groundPound.getGlobalCooldownActive()) return;
+        if (groundPound.isInGlobalCooldown()) return;
 
         if (ThreadLocalRandom.current().nextDouble() > 0.10) return;
         groundPound.doGlobalCooldown(20 * 10);
@@ -52,7 +52,7 @@ public class GroundPound extends MinorPower implements Listener {
         new BukkitRunnable() {
             @Override
             public void run() {
-                if (!eliteEntity.isValid()){
+                if (!eliteEntity.isValid()) {
                     cancel();
                     return;
                 }
@@ -98,7 +98,11 @@ public class GroundPound extends MinorPower implements Listener {
                             landCloudParticle(eliteEntity.getLivingEntity().getLocation());
 
                             for (Entity entity : eliteEntity.getLivingEntity().getNearbyEntities(10, 10, 10)) {
-                                entity.setVelocity(entity.getLocation().clone().subtract(eliteEntity.getLivingEntity().getLocation()).toVector().normalize().multiply(2).setY(1.5));
+                                try {
+                                    entity.setVelocity(entity.getLocation().clone().subtract(eliteEntity.getLivingEntity().getLocation()).toVector().normalize().multiply(2).setY(1.5));
+                                } catch (Exception ex) {
+                                    entity.setVelocity(new Vector(0, 1.5, 0));
+                                }
                                 if (entity instanceof LivingEntity)
                                     ((LivingEntity) entity).addPotionEffect(new PotionEffect(PotionEffectType.SLOW, 20 * 3, 2));
                             }

@@ -18,8 +18,8 @@ import com.magmaguy.elitemobs.mobconstructor.SimplePersistentEntity;
 import com.magmaguy.elitemobs.mobconstructor.SimplePersistentEntityInterface;
 import com.magmaguy.elitemobs.mobconstructor.custombosses.transitiveblocks.TransitiveBlock;
 import com.magmaguy.elitemobs.playerdata.ElitePlayerInventory;
-import com.magmaguy.elitemobs.powers.ElitePower;
-import com.magmaguy.elitemobs.powers.bosspowers.CustomSummonPower;
+import com.magmaguy.elitemobs.powers.meta.CustomSummonPower;
+import com.magmaguy.elitemobs.powers.meta.ElitePower;
 import com.magmaguy.elitemobs.thirdparty.discordsrv.DiscordSRVAnnouncement;
 import com.magmaguy.elitemobs.utils.*;
 import lombok.Getter;
@@ -32,6 +32,7 @@ import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
+import org.bukkit.event.entity.CreatureSpawnEvent;
 import org.bukkit.potion.PotionEffectType;
 import org.bukkit.scheduler.BukkitTask;
 
@@ -80,6 +81,9 @@ public class CustomBossEntity extends EliteEntity implements Listener, SimplePer
     @Setter
     private CustomSpawn customSpawn = null;
     private int existsFailureCount = 0;
+    @Getter
+    @Setter
+    private boolean isMount = false;
 
     /**
      * Uses a builder pattern in order to construct a CustomBossEntity at an arbitrary point in the future. Does not
@@ -152,7 +156,8 @@ public class CustomBossEntity extends EliteEntity implements Listener, SimplePer
             attemptsCounter = 1;
         if (spawnLocation != null && spawnLocation.getWorld() != null)
             lastTick = spawnLocation.getWorld().getFullTime();
-        if (livingEntity != null) {
+        //Use exists() here as the persistent entities will not try to respawn through this method
+        if (exists()) {
             new WarningMessage("Warning: " + customBossesConfigFields.getFilename() + " attempted to double spawn " + attemptsCounter + " times!", true);
             return;
         }
@@ -183,9 +188,14 @@ public class CustomBossEntity extends EliteEntity implements Listener, SimplePer
             else
                 level = 1;
 
-        if (chunkLoad || ChunkLocationChecker.locationIsLoaded(spawnLocation)) {
+            Boolean isChunkLoadedSpawn = null;
+
+        if (chunkLoad || ChunkLocationChecker.locationIsLoaded(spawnLocation) || isMount)  {
             chunkLoad = false;
             super.livingEntity = new CustomBossMegaConsumer(this).spawn();
+            isChunkLoadedSpawn = true;
+            if (super.livingEntity == null)
+                new WarningMessage("Something just prevented EliteMobs from spawning a Custom Boss! More info up next.");
             simplePersistentEntity = null;
         } else if (isPersistent) {
             if (simplePersistentEntity != null) {
@@ -193,10 +203,15 @@ public class CustomBossEntity extends EliteEntity implements Listener, SimplePer
                 return;
             }
             simplePersistentEntity = new SimplePersistentEntity(this, getLocation());
+            isChunkLoadedSpawn = false;
         }
 
-        if (!exists() && simplePersistentEntity == null) {
+        if (!exists()) {
             existsFailureCount++;
+            //this may seem odd but not setting it to null can cause double spawn attempts as the plugin catches itself
+            //correctly as not have a valid living entity but the checks are set up in such a way that if a living entity
+            //object is referenced then trying to spawn it again is a double spawn of the same entity
+            super.livingEntity = null;
             if (existsFailureCount > 10){
                 if (existsFailureCount == 11){
                     new WarningMessage("EliteMobs tried and failed to spawn " + customBossesConfigFields.getFilename() + " " + existsFailureCount + "times, probably due to regional protections or third party plugin incompatibilities.");
@@ -212,15 +227,13 @@ public class CustomBossEntity extends EliteEntity implements Listener, SimplePer
                 new WarningMessage("EliteMobs tried and failed to spawn " + customBossesConfigFields.getFilename() + " " + existsFailureCount + "times, probably due to regional protections.");
                 return;
             }
-            //this may seem odd but not setting it to null can cause double spawn attempts as the plugin catches itself
-            //correctly as not have a valid living entity but the checks are set up in such a way that if a living entity
-            //object is referenced then trying to spawn it again is a double spawn of the same entity
-            super.livingEntity = null;
             new WarningMessage("EliteMobs tried and failed to spawn " + customBossesConfigFields.getFilename() + " . Possible reasons for this:");
             new WarningMessage("- The region was protected by a plugin (most likely)");
             new WarningMessage("- The spawn was interfered with by some incompatible third party plugin");
             new WarningMessage("Debug data: ");
-            new WarningMessage("Attempted spawn location: " + spawnLocation.toString());
+            new WarningMessage("Chunk is loaded: " + ChunkLocationChecker.locationIsLoaded(spawnLocation));
+            new WarningMessage("Spawn type is normal spawn with chunk loaded: " + isChunkLoadedSpawn);
+            new WarningMessage("Attempted spawn location: " + spawnLocation.toString(), true);
             return;
         }
 
@@ -287,7 +300,7 @@ public class CustomBossEntity extends EliteEntity implements Listener, SimplePer
     private void spawnMessage() {
         if (customBossesConfigFields.getSpawnMessage() == null) return;
         if (customBossesConfigFields.getAnnouncementPriority() < 1) return;
-        if (!EventsConfig.ANNOUNCEMENT_BROADCAST_WORLD_ONLY)
+        if (!EventsConfig.announcementBroadcastWorldOnly)
             Bukkit.broadcastMessage(ChatColorConverter.convert(customBossesConfigFields.getSpawnMessage()));
         else
             for (Player player : livingEntity.getWorld().getPlayers())
@@ -344,6 +357,11 @@ public class CustomBossEntity extends EliteEntity implements Listener, SimplePer
         return customBossesConfigFields.getDamageModifier(material);
     }
 
+    public void resetLivingEntity(LivingEntity livingEntity, CreatureSpawnEvent.SpawnReason spawnReason) {
+        super.setLivingEntity(livingEntity, spawnReason);
+        new CustomBossMegaConsumer(this).applyBossFeatures(livingEntity);
+    }
+
     @Override
     public boolean exists() {
         return super.exists() || simplePersistentEntity != null;
@@ -391,8 +409,10 @@ public class CustomBossEntity extends EliteEntity implements Listener, SimplePer
             new EventCaller(new EliteMobRemoveEvent(this, removalReason));
             if (escapeMechanism != null) Bukkit.getScheduler().cancelTask(escapeMechanism);
             trackableCustomBosses.remove(this);
-            if (simplePersistentEntity != null)
+            if (simplePersistentEntity != null){
                 simplePersistentEntity.remove();
+                simplePersistentEntity = null;
+            }
             if (customBossBossBar != null)
                 customBossBossBar.remove();
             if (!removalReason.equals(RemovalReason.SHUTDOWN) && !removalReason.equals(RemovalReason.DEATH))

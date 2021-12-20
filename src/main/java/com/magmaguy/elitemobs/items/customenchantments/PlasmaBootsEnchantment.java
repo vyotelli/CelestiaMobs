@@ -32,7 +32,7 @@ public class PlasmaBootsEnchantment extends CustomEnchantment {
         player.setVelocity(new Vector(0, .8, 0));
         Bukkit.getScheduler().runTaskTimer(MetadataHandler.PLUGIN, (task) -> {
             if (!player.isValid() || !player.getLocation().clone().subtract(new Vector(0, 1, 0)).getBlock().isPassable()
-                    && player.getLocation().getY() - player.getLocation().getBlock().getY() < 0.1) {
+                    && player.getLocation().getY() - player.getLocation().getBlock().getY() < 0.1 || !player.getLocation().clone().getBlock().isPassable()) {
                 task.cancel();
                 doLanding(level, player);
                 return;
@@ -112,6 +112,7 @@ public class PlasmaBootsEnchantment extends CustomEnchantment {
         @EventHandler(ignoreCancelled = true, priority = EventPriority.HIGH)
         public void onSneak(PlayerToggleSneakEvent event) {
             if (!event.isSneaking()) return;
+            if (event.getPlayer().isFlying()) return;
             if (cooldownPlayers.contains(event.getPlayer().getUniqueId())) return;
             //todo: don't check this event if the power is disabled
             if (ElitePlayerInventory.playerInventories.get(event.getPlayer().getUniqueId()) == null) return;
@@ -124,7 +125,7 @@ public class PlasmaBootsEnchantment extends CustomEnchantment {
             }
             players.remove(event.getPlayer().getUniqueId());
             cooldownPlayers.add(event.getPlayer().getUniqueId());
-            Bukkit.getScheduler().runTaskLater(MetadataHandler.PLUGIN, (task) -> cooldownPlayers.remove(event.getPlayer().getUniqueId()), 20 * 60 * 2);
+            Bukkit.getScheduler().runTaskLater(MetadataHandler.PLUGIN, (task) -> cooldownPlayers.remove(event.getPlayer().getUniqueId()), 20L * 60 * 2);
 
             doPlasmaBootsEnchantment((int) plasmaBootLevel, event.getPlayer());
 

@@ -1,8 +1,8 @@
 package com.magmaguy.elitemobs.thirdparty.libsdisguises;
 
-import com.magmaguy.elitemobs.config.custombosses.CustomBossesConfigFields;
 import com.magmaguy.elitemobs.utils.WarningMessage;
 import me.libraryaddict.disguise.DisguiseAPI;
+import me.libraryaddict.disguise.DisguiseConfig;
 import me.libraryaddict.disguise.disguisetypes.*;
 import me.libraryaddict.disguise.disguisetypes.watchers.PlayerWatcher;
 import org.bukkit.Bukkit;
@@ -10,13 +10,17 @@ import org.bukkit.entity.Entity;
 
 public class DisguiseEntity {
 
+    public static void initialize(){
+        DisguiseConfig.setPlayerNameType(DisguiseConfig.PlayerNameType.ARMORSTANDS);
+    }
+
     /**
      * This method disguises the entity based on a config entry. It should be invoked after checking if libsdisguises
      * is in the server.
      *
      * @param disguiseName Raw name following config format
      */
-    public static void disguise(String disguiseName, Entity entity, CustomBossesConfigFields customBossesConfigFields) {
+    public static void disguise(String disguiseName, Entity entity, String customDisguiseData, String filename) {
 
         if (disguiseName.contains("player:")) {
             playerDisguise(disguiseName.replace("player:", ""), entity);
@@ -25,7 +29,7 @@ public class DisguiseEntity {
 
         if (disguiseName.contains("custom")) {
             try {
-                customDisguise(disguiseName.replace("custom:", ""), entity, customBossesConfigFields);
+                customDisguise(disguiseName.replace("custom:", ""), entity, customDisguiseData, filename);
             } catch (Exception ex) {
                 new WarningMessage("Failed to assign custom disguise " + disguiseName + "! Did you configure the disguise correctly?");
             }
@@ -73,12 +77,12 @@ public class DisguiseEntity {
         miscDisguise.startDisguise();
     }
 
-    private static void customDisguise(String customDisguise, Entity entity, CustomBossesConfigFields customBossesConfigFields) {
+    private static void customDisguise(String customDisguise, Entity entity, String customDisguiseData, String filename) {
         Disguise disguise = DisguiseAPI.getCustomDisguise(customDisguise);
         try {
             if (disguise == null)
-                if (customBossesConfigFields.getCustomDisguiseData() != null) {
-                    DisguiseAPI.addCustomDisguise(customDisguise, customBossesConfigFields.getCustomDisguiseData());
+                if (customDisguiseData != null) {
+                    DisguiseAPI.addCustomDisguise(customDisguise, customDisguiseData);
                     disguise = DisguiseAPI.getCustomDisguise(customDisguise);
                 }
             if (disguise == null)
@@ -88,7 +92,7 @@ public class DisguiseEntity {
             disguise.setDynamicName(true);
             disguise.startDisguise();
         } catch (Exception ex) {
-            new WarningMessage("Failed to set custom disguise for boss " + customBossesConfigFields.getFilename() + " !");
+            new WarningMessage("Failed to set custom disguise for " + filename + " !");
             new WarningMessage("Does the disguise exist? Is LibsDisguises up-to-date?");
         }
     }
@@ -99,6 +103,7 @@ public class DisguiseEntity {
         if (disguise == null) return;
         if (!(disguise.getWatcher() instanceof PlayerWatcher)) return;
         PlayerWatcher playerWatcher = (PlayerWatcher) disguise.getWatcher();
+        playerWatcher.setNameVisible(disguiseNameVisibility);
         playerWatcher.setCustomNameVisible(disguiseNameVisibility);
     }
 

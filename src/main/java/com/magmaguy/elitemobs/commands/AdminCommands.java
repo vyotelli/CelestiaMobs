@@ -24,7 +24,7 @@ import com.magmaguy.elitemobs.menus.GetLootMenu;
 import com.magmaguy.elitemobs.mobconstructor.EliteEntity;
 import com.magmaguy.elitemobs.mobconstructor.custombosses.CustomBossEntity;
 import com.magmaguy.elitemobs.mobconstructor.custombosses.transitiveblocks.TransitiveBlockCommand;
-import com.magmaguy.elitemobs.powers.ElitePower;
+import com.magmaguy.elitemobs.powers.meta.ElitePower;
 import com.magmaguy.elitemobs.thirdparty.discordsrv.DiscordSRVAnnouncement;
 import com.magmaguy.elitemobs.utils.DebugMessage;
 import com.magmaguy.elitemobs.utils.DiscordLinks;
@@ -115,7 +115,7 @@ public class AdminCommands {
                 .handler(commandContext -> SetupHandler.setupAreaCommand((Player) commandContext.getSender(), commandContext.get("areaName"))));
 
         ArrayList<String> powers = new ArrayList<>();
-        for (ElitePower elitePower : ElitePower.elitePowers)
+        for (ElitePower elitePower : ElitePower.getElitePowers())
             powers.add(elitePower.getFileName());
         powers.add("custom");
 
@@ -321,7 +321,7 @@ public class AdminCommands {
                 .handler(commandContext -> DebugScreen.open((Player) commandContext.getSender(), commandContext.get("argument"))));
 
         ArrayList<String> events = new ArrayList<>();
-        TimedEvent.blueprintEvents.stream().forEach(event -> events.add(event.getCustomEventsConfigFields().getFilename()));
+        TimedEvent.getBlueprintEvents().stream().forEach(event -> events.add(event.getCustomEventsConfigFields().getFilename()));
 
         // /em event <eventName>
         manager.command(builder.literal("event")

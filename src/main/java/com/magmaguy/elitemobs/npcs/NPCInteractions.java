@@ -7,9 +7,11 @@ import com.magmaguy.elitemobs.api.PlayerPreTeleportEvent;
 import com.magmaguy.elitemobs.api.PlayerTeleportEvent;
 import com.magmaguy.elitemobs.entitytracker.EntityTracker;
 import com.magmaguy.elitemobs.menus.*;
+import com.magmaguy.elitemobs.quests.QuestInteractionHandler;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.inventory.InventoryOpenEvent;
 import org.bukkit.event.inventory.InventoryType;
@@ -18,7 +20,7 @@ import org.bukkit.scheduler.BukkitRunnable;
 
 public class NPCInteractions implements Listener {
 
-    @EventHandler
+    @EventHandler (ignoreCancelled = true, priority = EventPriority.HIGHEST)
     public void playerNPCInteract(PlayerInteractAtEntityEvent event) {
 
         NPCEntity npcEntity = EntityTracker.getNPCEntity(event.getRightClicked());
@@ -37,7 +39,6 @@ public class NPCInteractions implements Listener {
                     new BukkitRunnable() {
                         @Override
                         public void run() {
-                            GuildRankMenuHandler guildRankMenuHandler = new GuildRankMenuHandler();
                             GuildRankMenuHandler.initializeGuildRankMenu(event.getPlayer());
                         }
                     }.runTaskLater(MetadataHandler.PLUGIN, 1);
@@ -70,10 +71,12 @@ public class NPCInteractions implements Listener {
                     new BukkitRunnable() {
                         @Override
                         public void run() {
-                            event.getPlayer().sendMessage("Coming soon!");
-                            //QuestsMenu.initializeQuestsMenu(event.getPlayer());
+                            QuestInteractionHandler.processDynamicQuests(event.getPlayer(), npcEntity);
                         }
                     }.runTaskLater(MetadataHandler.PLUGIN, 1);
+                break;
+            case CUSTOM_QUEST_GIVER:
+                QuestInteractionHandler.processNPCQuests(event.getPlayer(), npcEntity);
                 break;
             case BAR:
                 event.getPlayer().sendMessage("[EliteMobs] This feature is coming soon!");
@@ -195,6 +198,7 @@ public class NPCInteractions implements Listener {
         BAR,
         ARENA,
         QUEST_GIVER,
+        CUSTOM_QUEST_GIVER,
         NONE,
         SELL,
         TELEPORT_BACK,

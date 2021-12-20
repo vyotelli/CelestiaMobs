@@ -2,7 +2,7 @@ package com.magmaguy.elitemobs.powers.offensivepowers;
 
 import com.magmaguy.elitemobs.api.PlayerDamagedByEliteMobEvent;
 import com.magmaguy.elitemobs.config.powers.PowersConfig;
-import com.magmaguy.elitemobs.powers.MinorPower;
+import com.magmaguy.elitemobs.powers.meta.MinorPower;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 
@@ -20,7 +20,11 @@ public class AttackVacuum extends MinorPower implements Listener {
 
         if (event.getPlayer().isValid() && event.getEliteMobEntity().isValid() &&
                 event.getPlayer().getWorld().equals(event.getEliteMobEntity().getLivingEntity().getWorld()))
-            event.getPlayer().setVelocity(event.getEliteMobEntity().getLivingEntity().getLocation().clone().subtract(event.getPlayer().getLocation()).toVector().normalize());
+            try {
+                event.getPlayer().setVelocity(event.getEliteMobEntity().getLivingEntity().getLocation().clone().subtract(event.getPlayer().getLocation()).toVector().normalize());
+            } catch (Exception ex) {
+                //sometimes this results in non-finite vectors
+            }
     }
 
 }

@@ -4,7 +4,7 @@ import com.magmaguy.elitemobs.MetadataHandler;
 import com.magmaguy.elitemobs.api.EliteMobDamagedByPlayerEvent;
 import com.magmaguy.elitemobs.config.MobCombatSettingsConfig;
 import com.magmaguy.elitemobs.config.powers.PowersConfig;
-import com.magmaguy.elitemobs.powers.MajorPower;
+import com.magmaguy.elitemobs.powers.meta.MajorPower;
 import org.bukkit.Location;
 import org.bukkit.Particle;
 import org.bukkit.entity.Entity;
@@ -30,7 +30,7 @@ public class ZombieBloat extends MajorPower implements Listener {
     public void onHit(EliteMobDamagedByPlayerEvent event) {
         ZombieBloat zombieBloat = (ZombieBloat) event.getEliteMobEntity().getPower(this);
         if (zombieBloat == null) return;
-        if (zombieBloat.getGlobalCooldownActive()) return;
+        if (zombieBloat.isInGlobalCooldown()) return;
 
         if (ThreadLocalRandom.current().nextDouble() > 0.20) return;
         zombieBloat.doGlobalCooldown(20 * 10);
@@ -59,7 +59,7 @@ public class ZombieBloat extends MajorPower implements Listener {
                     eventZombie.getWorld().spawnParticle(Particle.TOTEM, new Location(eventZombie.getWorld(),
                                     eventZombie.getLocation().getX(), eventZombie.getLocation().getY() +
                                     eventZombie.getHeight(), eventZombie.getLocation().getZ()), 20, timer / 24,
-                            timer / 9, timer / 24, 0.1);
+                            timer / 9d, timer / 24d, 0.1);
 
                 timer++;
             }
@@ -101,6 +101,7 @@ public class ZombieBloat extends MajorPower implements Listener {
             try {
                 livingEntity.setVelocity(normalizedVector);
             } catch (Exception e) {
+                livingEntity.setVelocity(new Vector(0, 1.5, 0));
             }
 
         }

@@ -4,37 +4,53 @@ import com.magmaguy.elitemobs.config.ConfigurationEngine;
 import com.magmaguy.elitemobs.config.menus.MenusConfigFields;
 import com.magmaguy.elitemobs.utils.ItemStackGenerator;
 import com.magmaguy.elitemobs.utils.ItemStackSerializer;
+import lombok.Getter;
 import org.bukkit.Material;
-import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.inventory.ItemStack;
 
 import java.util.Arrays;
 
 public class UnbinderMenuConfig extends MenusConfigFields {
 
-    public static String shopName;
-    public static ItemStack infoButton;
-    public static ItemStack eliteItemInputInfoButton;
-    public static ItemStack eliteUnbindInputInfoButton;
-    public static ItemStack outputInfoButton;
-    public static int infoSlot;
-    public static int eliteItemInputInformationSlot;
-    public static int eliteScrapInputInformationSlot;
-    public static int outputInformationSlot;
-    public static int eliteItemInputSlot;
-    public static int eliteUnbindInputSlot;
-    public static int outputSlot;
-    public static ItemStack cancelButton;
-    public static int cancelSlot;
-    public static ItemStack confirmButton;
-    public static int confirmSlot;
+    @Getter
+    private static String shopName;
+    @Getter
+    private static ItemStack infoButton;
+    @Getter
+    private static ItemStack eliteItemInputInfoButton;
+    @Getter
+    private static ItemStack eliteUnbindInputInfoButton;
+    @Getter
+    private static ItemStack outputInfoButton;
+    @Getter
+    private static int infoSlot;
+    @Getter
+    private static int eliteItemInputInformationSlot;
+    @Getter
+    private static int eliteScrapInputInformationSlot;
+    @Getter
+    private static int outputInformationSlot;
+    @Getter
+    private static int eliteItemInputSlot;
+    @Getter
+    private static int eliteUnbindInputSlot;
+    @Getter
+    private static int outputSlot;
+    @Getter
+    private static ItemStack cancelButton;
+    @Getter
+    private static int cancelSlot;
+    @Getter
+    private static ItemStack confirmButton;
+    @Getter
+    private static int confirmSlot;
 
     public UnbinderMenuConfig() {
-        super("unbind_menu");
+        super("unbind_menu", true);
     }
 
     @Override
-    public void generateConfigDefaults(FileConfiguration fileConfiguration) {
+    public void processAdditionalFields() {
         shopName = ConfigurationEngine.setString(fileConfiguration, "shopName", "[EM] Unbind menu!");
         ItemStackSerializer.serialize(
                 "infoButton",

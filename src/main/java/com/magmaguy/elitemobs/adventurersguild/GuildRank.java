@@ -3,7 +3,7 @@ package com.magmaguy.elitemobs.adventurersguild;
 import com.magmaguy.elitemobs.MetadataHandler;
 import com.magmaguy.elitemobs.config.AdventurersGuildConfig;
 import com.magmaguy.elitemobs.playerdata.ElitePlayerInventory;
-import com.magmaguy.elitemobs.playerdata.PlayerData;
+import com.magmaguy.elitemobs.playerdata.database.PlayerData;
 import com.magmaguy.elitemobs.utils.Round;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.entity.Player;
@@ -12,7 +12,12 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.scheduler.BukkitRunnable;
 
+import java.util.UUID;
+
 public class GuildRank {
+
+    private GuildRank() {
+    }
 
     public static void setGuildPrestigeRank(Player player, int prestigeRank) {
         PlayerData.setGuildPrestigeLevel(player.getUniqueId(), prestigeRank);
@@ -20,7 +25,11 @@ public class GuildRank {
     }
 
     public static int getGuildPrestigeRank(Player player) {
-        return PlayerData.getGuildPrestigeLevel(player.getUniqueId());
+        return getGuildPrestigeRank(player.getUniqueId());
+    }
+
+    public static int getGuildPrestigeRank(UUID player) {
+        return PlayerData.getGuildPrestigeLevel(player);
     }
 
     public static int getGuildPrestigeRank(Player player, boolean databaseAccess) {
@@ -106,7 +115,11 @@ public class GuildRank {
     }
 
     public static double currencyBonusMultiplier(int prestigeLevel) {
-        return 1 + prestigeLevel * 5;
+        return 1D + prestigeLevel * 5;
+    }
+
+    public static double currencyBonusMultiplier(UUID player) {
+        return currencyBonusMultiplier(getGuildPrestigeRank(player));
     }
 
     /**

@@ -18,6 +18,7 @@ import org.bukkit.persistence.PersistentDataType;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Objects;
 
 public class ItemTagger {
 
@@ -149,6 +150,11 @@ public class ItemTagger {
         return itemMeta.getPersistentDataContainer().has(enchantmentKey, PersistentDataType.INTEGER);
     }
 
+    public static boolean hasKey(ItemStack itemStack, String key){
+        if (!itemStack.hasItemMeta()) return false;
+        return Objects.requireNonNull(itemStack.getItemMeta()).getPersistentDataContainer().has(new NamespacedKey(MetadataHandler.PLUGIN, key), PersistentDataType.STRING);
+    }
+
     public static boolean hasEnchantment(ItemMeta itemMeta, String keyString) {
         NamespacedKey enchantmentKey = new NamespacedKey(MetadataHandler.PLUGIN, keyString);
         if (!itemMeta.hasLore()) //early performance tweak
@@ -164,10 +170,10 @@ public class ItemTagger {
 
     public static void registerItemSource(EliteEntity eliteEntity, ItemMeta itemMeta) {
         if (eliteEntity == null) {
-            itemMeta.getPersistentDataContainer().set(itemSource, PersistentDataType.STRING, ChatColorConverter.convert(ItemSettingsConfig.shopItemSource));
+            itemMeta.getPersistentDataContainer().set(itemSource, PersistentDataType.STRING, ChatColorConverter.convert(ItemSettingsConfig.getShopItemSource()));
             return;
         }
-        itemMeta.getPersistentDataContainer().set(itemSource, PersistentDataType.STRING, ChatColorConverter.convert(ItemSettingsConfig.mobItemSource.replace("$mob", eliteEntity.getName())));
+        itemMeta.getPersistentDataContainer().set(itemSource, PersistentDataType.STRING, ChatColorConverter.convert(ItemSettingsConfig.getMobItemSource().replace("$mob", eliteEntity.getName())));
     }
 
     public static String getItemSource(ItemMeta itemMeta) {

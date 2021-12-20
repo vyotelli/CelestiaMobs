@@ -16,7 +16,7 @@ import com.magmaguy.elitemobs.utils.WeightedProbability;
 import lombok.Getter;
 import org.bukkit.Location;
 import org.bukkit.Material;
-import org.bukkit.block.data.type.Chest;
+import org.bukkit.block.data.Directional;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -72,6 +72,11 @@ public class TreasureChest {
 
     }
 
+    public static void clearTreasureChests() {
+        unloadedChests.clear();
+        treasureChestHashMap.clear();
+    }
+
     public static HashMap<Location, TreasureChest> getTreasureChestHashMap() {
         return treasureChestHashMap;
     }
@@ -89,10 +94,15 @@ public class TreasureChest {
             new WarningMessage("Custom Treasure Chest " + customTreasureChestConfigFields.getFilename() + " has an invalid location and can not be placed.");
             return;
         }
-        //todo: this doesn't support non- chest block types like the ender chest
-        Chest chest = (Chest) location.getBlock().getBlockData();
-        chest.setFacing(customTreasureChestConfigFields.getFacing());
-        location.getBlock().setBlockData(chest);
+        if (location.getBlock().getBlockData() instanceof Directional) {
+            Directional chest = (Directional) location.getBlock().getBlockData();
+            chest.setFacing(customTreasureChestConfigFields.getFacing());
+            location.getBlock().setBlockData(chest);
+        } else {
+            new WarningMessage("Treasure chest " + customTreasureChestConfigFields.getFilename() +
+                    " does not have a directional block for the Treasure Chest material " +
+                    customTreasureChestConfigFields.getChestMaterial() + " ! Chest materials are directional, is your chest a chest?");
+        }
         location.getBlock().getState().update();
 
     }
@@ -205,11 +215,11 @@ public class TreasureChest {
         if (seconds < 60 * 2)
             return seconds + " seconds";
         if (seconds < 60 * 60 * 2)
-            return Round.twoDecimalPlaces(seconds / 60) + "minutes";
+            return Round.twoDecimalPlaces(seconds / 60D) + "minutes";
         if (seconds < 60 * 60 * 48)
-            return Round.twoDecimalPlaces(seconds / 60 / 60) + "hours";
+            return Round.twoDecimalPlaces(seconds / 60D / 60) + "hours";
         else
-            return Round.twoDecimalPlaces(seconds / 60 / 60 / 48) + "days";
+            return Round.twoDecimalPlaces(seconds / 60D / 60 / 48) + "days";
     }
 
     public void removeTreasureChest() {

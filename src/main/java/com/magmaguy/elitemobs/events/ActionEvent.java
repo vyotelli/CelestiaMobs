@@ -28,11 +28,10 @@ import java.util.concurrent.ThreadLocalRandom;
 
 public class ActionEvent extends CustomEvent {
 
-    public static ArrayList<ActionEvent> blueprintEvents = new ArrayList<>();
-    public static ArrayList<ActionEvent> actionEvents = new ArrayList<>();
-    private static HashSet<Player> playerCooldowns = new HashSet<>();
-    public double chance;
-    public List<Material> breakableMaterials;
+    private static final List<ActionEvent> blueprintEvents = new ArrayList<>();
+    private static final HashSet<Player> playerCooldowns = new HashSet<>();
+    private final double chance;
+    private final List<Material> breakableMaterials;
     private Player player;
 
     public ActionEvent(CustomEventsConfigFields customEventsConfigFields) {
@@ -45,8 +44,6 @@ public class ActionEvent extends CustomEvent {
     /**
      * Initializes events directly from the configuration files, and keeps a copy to run checks over in order to instantiate
      * events for the server to run
-     *
-     * @return Instantiated ActionEvent
      */
     public static void initializeBlueprintEvents() {
         if (!EventsConfig.actionEventsEnabled) return;
@@ -57,6 +54,9 @@ public class ActionEvent extends CustomEvent {
                     case FISH:
                     case TILL_SOIL:
                         blueprintEvents.add(new ActionEvent(customEventsConfigFields));
+                        break;
+                    default:
+                        break;
                 }
         }
     }
@@ -67,14 +67,14 @@ public class ActionEvent extends CustomEvent {
     }
 
     public boolean checkFishStartConditions() {
-        return !(ThreadLocalRandom.current().nextDouble() >= chance);
+        return ThreadLocalRandom.current().nextDouble() < chance;
     }
 
     public boolean checkTillSoilStartConditions() {
-        return !(ThreadLocalRandom.current().nextDouble() >= chance);
+        return ThreadLocalRandom.current().nextDouble() < chance;
     }
 
-    private void instantiateEvent(Location location, Player player) {
+    public void instantiateEvent(Location location, Player player) {
         this.player = player;
         ActionEvent actionEvent = new ActionEvent(customEventsConfigFields);
         actionEvent.setEventStartLocation(location);
@@ -92,8 +92,6 @@ public class ActionEvent extends CustomEvent {
             actionEvent.primaryEliteMobs.add(customBossEntity);
         }
 
-        actionEvents.add(actionEvent);
-
         actionEvent.start();
     }
 
@@ -105,11 +103,12 @@ public class ActionEvent extends CustomEvent {
 
     @Override
     public void eventWatchdog() {
+        //Nothing really for the duration here
     }
 
     @Override
     public void endModifiers() {
-        actionEvents.remove(this);
+        //No need to track action events
     }
 
     public static class ActionEventEvents implements Listener {
@@ -118,9 +117,9 @@ public class ActionEvent extends CustomEvent {
             if (playerCooldowns.contains(event.getPlayer())) return;
             if (!CustomEvent.isLocationValid(event.getBlock().getLocation())) return;
             for (ActionEvent actionEvent : blueprintEvents)
-                if (actionEvent.eventType.equals(EventType.BREAK_BLOCK))
-                    if (actionEvent.checkBlockBreakStartConditions(event.getBlock().getType()))
-                        actionEvent.instantiateEvent(event.getBlock().getLocation().clone().add(new Vector(0.5, 0, 0.5)), event.getPlayer());
+                if (actionEvent.eventType.equals(EventType.BREAK_BLOCK) &&
+                        actionEvent.checkBlockBreakStartConditions(event.getBlock().getType()))
+                    actionEvent.instantiateEvent(event.getBlock().getLocation().clone().add(new Vector(0.5, 0, 0.5)), event.getPlayer());
         }
 
 
@@ -130,9 +129,8 @@ public class ActionEvent extends CustomEvent {
             if (playerCooldowns.contains(event.getPlayer())) return;
             if (!CustomEvent.isLocationValid(event.getCaught().getLocation())) return;
             for (ActionEvent actionEvent : blueprintEvents)
-                if (actionEvent.eventType.equals(EventType.FISH))
-                    if (actionEvent.checkFishStartConditions())
-                        actionEvent.instantiateEvent(event.getCaught().getLocation(), event.getPlayer());
+                if (actionEvent.eventType.equals(EventType.FISH) && actionEvent.checkFishStartConditions())
+                    actionEvent.instantiateEvent(event.getCaught().getLocation(), event.getPlayer());
         }
 
         @EventHandler(ignoreCancelled = true, priority = EventPriority.HIGH)
@@ -153,9 +151,8 @@ public class ActionEvent extends CustomEvent {
             if (!(event.getClickedBlock().getType().equals(Material.DIRT) ||
                     event.getClickedBlock().getType().equals(Material.GRASS_BLOCK))) return;
             for (ActionEvent actionEvent : blueprintEvents)
-                if (actionEvent.eventType.equals(EventType.TILL_SOIL))
-                    if (actionEvent.checkTillSoilStartConditions())
-                        actionEvent.instantiateEvent(location, event.getPlayer());
+                if (actionEvent.eventType.equals(EventType.TILL_SOIL) && actionEvent.checkTillSoilStartConditions())
+                    actionEvent.instantiateEvent(location, event.getPlayer());
         }
     }
 }

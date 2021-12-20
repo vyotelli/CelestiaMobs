@@ -2,6 +2,7 @@ package com.magmaguy.elitemobs.mobconstructor;
 
 import com.magmaguy.elitemobs.ChatColorConverter;
 import com.magmaguy.elitemobs.MetadataHandler;
+import com.magmaguy.elitemobs.api.EliteMobHealEvent;
 import com.magmaguy.elitemobs.api.internal.RemovalReason;
 import com.magmaguy.elitemobs.combatsystem.CombatSystem;
 import com.magmaguy.elitemobs.combatsystem.antiexploit.AntiExploitMessage;
@@ -15,12 +16,13 @@ import com.magmaguy.elitemobs.entitytracker.EntityTracker;
 import com.magmaguy.elitemobs.events.CustomEvent;
 import com.magmaguy.elitemobs.mobconstructor.custombosses.CustomBossEntity;
 import com.magmaguy.elitemobs.mobconstructor.mobdata.aggressivemobs.EliteMobProperties;
-import com.magmaguy.elitemobs.powers.ElitePower;
-import com.magmaguy.elitemobs.powers.MajorPower;
-import com.magmaguy.elitemobs.powers.MinorPower;
+import com.magmaguy.elitemobs.powers.meta.ElitePower;
+import com.magmaguy.elitemobs.powers.meta.MajorPower;
+import com.magmaguy.elitemobs.powers.meta.MinorPower;
 import com.magmaguy.elitemobs.powerstances.MajorPowerPowerStance;
 import com.magmaguy.elitemobs.powerstances.MinorPowerPowerStance;
 import com.magmaguy.elitemobs.thirdparty.libsdisguises.DisguiseEntity;
+import com.magmaguy.elitemobs.utils.EventCaller;
 import com.magmaguy.elitemobs.utils.VersionChecker;
 import com.magmaguy.elitemobs.utils.WarningMessage;
 import lombok.Getter;
@@ -97,7 +99,7 @@ public class EliteEntity implements SimplePersistentEntityInterface {
     protected double defaultMaxHealth;
     @Getter
     @Setter
-    protected boolean isCooldown = false;
+    protected boolean inCooldown = false;
     @Getter
     protected boolean triggeredAntiExploit = false;
     protected int antiExploitPoints = 0;
@@ -219,6 +221,7 @@ public class EliteEntity implements SimplePersistentEntityInterface {
     }
 
     public void setLivingEntity(LivingEntity livingEntity, CreatureSpawnEvent.SpawnReason spawnReason) {
+        if (this.livingEntity != null) EntityTracker.unregister(this.livingEntity.getUniqueId(), RemovalReason.ENTITY_REPLACEMENT);
         if (livingEntity == null) return;
         this.livingEntity = livingEntity;
         this.unsyncedLivingEntity = livingEntity;
@@ -266,6 +269,8 @@ public class EliteEntity implements SimplePersistentEntityInterface {
     }
 
     public void setNameVisible(boolean isVisible) {
+        //Check if the boss is already dead
+        if (livingEntity == null) return;
         livingEntity.setCustomNameVisible(isVisible);
         if (isCustomBossEntity())
             DisguiseEntity.setDisguiseNameVisibility(isVisible, livingEntity);
@@ -299,12 +304,19 @@ public class EliteEntity implements SimplePersistentEntityInterface {
     }
 
     public void setHealth(double health) {
-        this.health = health;
-        livingEntity.setHealth(health);
+        this.health =  Math.min(health, this.maxHealth);
+        livingEntity.setHealth(this.health);
     }
 
     public void syncPluginHealth(double health) {
         this.health = health;
+    }
+
+    public void heal(double healAmount){
+        EliteMobHealEvent eliteMobHealEvent = new EliteMobHealEvent(this, healAmount);
+        new EventCaller(eliteMobHealEvent);
+        if (eliteMobHealEvent.isCancelled()) return;
+        setHealth(health + healAmount);
     }
 
     public double damage(double damage) {
@@ -314,6 +326,9 @@ public class EliteEntity implements SimplePersistentEntityInterface {
     }
 
     public void fullHeal() {
+        EliteMobHealEvent eliteMobHealEvent = new EliteMobHealEvent(this, true);
+        new EventCaller(eliteMobHealEvent);
+        if (eliteMobHealEvent.isCancelled()) return;
         setHealth(this.maxHealth);
         this.health = maxHealth;
         damagers.clear();
@@ -512,21 +527,21 @@ public class EliteEntity implements SimplePersistentEntityInterface {
     }
 
     public void doCooldown() {
-        setCooldown(true);
+        setInCooldown(true);
         new BukkitRunnable() {
             @Override
             public void run() {
-                setCooldown(false);
+                setInCooldown(false);
             }
         }.runTaskLater(MetadataHandler.PLUGIN, 20 * 15);
     }
 
     public void doGlobalPowerCooldown(int ticks) {
-        setCooldown(true);
+        setInCooldown(true);
         new BukkitRunnable() {
             @Override
             public void run() {
-                setCooldown(false);
+                setInCooldown(false);
             }
         }.runTaskLater(MetadataHandler.PLUGIN, ticks);
     }

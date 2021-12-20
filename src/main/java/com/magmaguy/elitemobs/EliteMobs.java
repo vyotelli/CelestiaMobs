@@ -14,6 +14,7 @@ import com.magmaguy.elitemobs.config.custombosses.CustomBossesConfig;
 import com.magmaguy.elitemobs.config.custombosses.CustomBossesConfigFields;
 import com.magmaguy.elitemobs.config.customevents.CustomEventsConfig;
 import com.magmaguy.elitemobs.config.customitems.CustomItemsConfig;
+import com.magmaguy.elitemobs.config.customquests.CustomQuestsConfig;
 import com.magmaguy.elitemobs.config.customspawns.CustomSpawnConfig;
 import com.magmaguy.elitemobs.config.customtreasurechests.CustomTreasureChestsConfig;
 import com.magmaguy.elitemobs.config.dungeonpackager.DungeonPackagerConfig;
@@ -41,13 +42,15 @@ import com.magmaguy.elitemobs.mobconstructor.mobdata.PluginMobProperties;
 import com.magmaguy.elitemobs.mobs.passive.EggRunnable;
 import com.magmaguy.elitemobs.mobs.passive.PassiveEliteMobDeathHandler;
 import com.magmaguy.elitemobs.playerdata.ElitePlayerInventory;
-import com.magmaguy.elitemobs.playerdata.PlayerData;
+import com.magmaguy.elitemobs.playerdata.database.PlayerData;
 import com.magmaguy.elitemobs.powerstances.MajorPowerStanceMath;
 import com.magmaguy.elitemobs.powerstances.MinorPowerStanceMath;
-import com.magmaguy.elitemobs.quests.QuestsMenu;
+import com.magmaguy.elitemobs.quests.QuestTracking;
 import com.magmaguy.elitemobs.thirdparty.bstats.CustomCharts;
+import com.magmaguy.elitemobs.thirdparty.libsdisguises.DisguiseEntity;
 import com.magmaguy.elitemobs.thirdparty.placeholderapi.Placeholders;
 import com.magmaguy.elitemobs.thirdparty.worldguard.WorldGuardCompatibility;
+import com.magmaguy.elitemobs.treasurechest.TreasureChest;
 import com.magmaguy.elitemobs.utils.InfoMessage;
 import com.magmaguy.elitemobs.utils.ServerTime;
 import com.magmaguy.elitemobs.utils.WarningMessage;
@@ -91,7 +94,7 @@ public class EliteMobs extends JavaPlugin {
         AdventurersGuildConfig.initializeConfig();
         ValidWorldsConfig.initializeConfig();
 
-        MenusConfig.initializeConfigs();
+        new MenusConfig();
         new PowersConfig();
         MobPropertiesConfig.initializeConfigs();
         CustomEnchantment.initializeCustomEnchantments();
@@ -102,6 +105,7 @@ public class EliteMobs extends JavaPlugin {
         ReadMeForTranslationsConfig.initialize();
         ItemUpgradeSystemConfig.initializeConfig();
         new CustomEventsConfig();
+        QuestsConfig.initializeConfig();
     }
 
     public static void worldScanner() {
@@ -150,6 +154,9 @@ public class EliteMobs extends JavaPlugin {
         New config loading
          */
         initializeConfigs();
+
+        if (Bukkit.getPluginManager().isPluginEnabled("LibsDisguises"))
+            DisguiseEntity.initialize();
 
         if (worldGuardIsEnabled)
             Bukkit.getLogger().info("[EliteMobs] WorldGuard compatibility is enabled!");
@@ -256,10 +263,10 @@ public class EliteMobs extends JavaPlugin {
 
         //Find the stats of bosses in minidungeons
         for (Minidungeon minidungeon : Minidungeon.minidungeons.values()) {
-            if (minidungeon.dungeonPackagerConfigFields.getDungeonLocationType() != null)
-                if (minidungeon.dungeonPackagerConfigFields.getDungeonLocationType().equals(DungeonPackagerConfigFields.DungeonLocationType.WORLD))
+            if (minidungeon.getDungeonPackagerConfigFields().getDungeonLocationType() != null)
+                if (minidungeon.getDungeonPackagerConfigFields().getDungeonLocationType().equals(DungeonPackagerConfigFields.DungeonLocationType.WORLD))
                     minidungeon.quantifyWorldBosses();
-                else if (minidungeon.dungeonPackagerConfigFields.getDungeonLocationType().equals(DungeonPackagerConfigFields.DungeonLocationType.SCHEMATIC))
+                else if (minidungeon.getDungeonPackagerConfigFields().getDungeonLocationType().equals(DungeonPackagerConfigFields.DungeonLocationType.SCHEMATIC))
                     minidungeon.quantifySchematicBosses(false);
         }
 
@@ -277,6 +284,8 @@ public class EliteMobs extends JavaPlugin {
                             " available for that Minecraft version. Download from trustworthy sources, as if you download Spigot from some random website other than Spigot," +
                             " you are probably not getting the latest version (and also there's a high chance you'll get a virus).");
         }
+
+        new CustomQuestsConfig();
 
         //Commands
         new CommandHandler();
@@ -339,6 +348,7 @@ public class EliteMobs extends JavaPlugin {
         CustomItem.getWeighedFixedItems().clear();
         new InfoMessage("Clearing Minidungeons...");
         Minidungeon.minidungeons.clear();
+        RegionalBossEntity.regionalBossesShutdown();
 
         new InfoMessage("Unregistering placeholders...");
         if (this.placeholders != null)
@@ -346,6 +356,12 @@ public class EliteMobs extends JavaPlugin {
 
         new InfoMessage("Unregistering handlers...");
         HandlerList.unregisterAll(MetadataHandler.PLUGIN);
+
+        new InfoMessage("Clearing Treasure Chests...");
+        TreasureChest.clearTreasureChests();
+
+        new InfoMessage("Untracking quests...");
+        QuestTracking.clear();
 
         //save cached data
         Bukkit.getLogger().info("[EliteMobs] Saving EliteMobs databases...");
@@ -362,7 +378,6 @@ public class EliteMobs extends JavaPlugin {
             Grid.initializeGrid();
         int eggTimerInterval = 20 * 60 * 10 / DefaultConfig.superMobStackAmount;
         new PlayerPotionEffects();
-        QuestsMenu.questRefresher();
         if (MobPropertiesConfig.getMobProperties().get(EntityType.CHICKEN).isEnabled() && DefaultConfig.superMobStackAmount > 0) {
             new EggRunnable().runTaskTimer(this, eggTimerInterval, eggTimerInterval);
         }

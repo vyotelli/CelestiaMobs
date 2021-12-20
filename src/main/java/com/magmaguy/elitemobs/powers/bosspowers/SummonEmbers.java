@@ -5,7 +5,7 @@ import com.magmaguy.elitemobs.api.EliteMobDamagedByPlayerEvent;
 import com.magmaguy.elitemobs.config.powers.PowersConfig;
 import com.magmaguy.elitemobs.mobconstructor.EliteEntity;
 import com.magmaguy.elitemobs.mobconstructor.custombosses.CustomBossEntity;
-import com.magmaguy.elitemobs.powers.BossPower;
+import com.magmaguy.elitemobs.powers.meta.BossPower;
 import org.bukkit.Location;
 import org.bukkit.Particle;
 import org.bukkit.event.EventHandler;
@@ -40,6 +40,10 @@ public class SummonEmbers extends BossPower implements Listener {
             @Override
             public void run() {
                 counter++;
+                if (!eliteEntity.isValid()){
+                    cancel();
+                    return;
+                }
                 eliteEntity.getLivingEntity().getWorld().spawnParticle(Particle.FLAME,
                         eliteEntity.getLivingEntity().getLocation().add(new Vector(0, 1, 0)), 50, 0.0001, 0.0001, 0.0001);
                 if (counter < 20 * 3) return;

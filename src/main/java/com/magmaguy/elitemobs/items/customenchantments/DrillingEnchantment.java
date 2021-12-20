@@ -2,22 +2,21 @@ package com.magmaguy.elitemobs.items.customenchantments;
 
 import com.magmaguy.elitemobs.MetadataHandler;
 import com.magmaguy.elitemobs.items.ItemTagger;
+import com.magmaguy.elitemobs.utils.EventCaller;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
 import org.bukkit.block.Block;
-import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.inventory.meta.Damageable;
-import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.util.Vector;
 
-import java.util.concurrent.ThreadLocalRandom;
+import java.util.HashSet;
+import java.util.Set;
 
 public class DrillingEnchantment extends CustomEnchantment {
 
@@ -28,6 +27,7 @@ public class DrillingEnchantment extends CustomEnchantment {
     }
 
     public static class DrillingEnchantmentEvents implements Listener {
+        private static final Set<Player> activePlayers = new HashSet<>();
         private Material material = null;
         private ItemStack itemStack = null;
         private MiningDirection miningDirection = null;
@@ -37,8 +37,8 @@ public class DrillingEnchantment extends CustomEnchantment {
         public void onDig(BlockBreakEvent event) {
             if (event.isCancelled()) return;
             if (event.getPlayer().isSneaking()) return;
-            if (event.getPlayer().getInventory().getItemInMainHand() == null ||
-                    !event.getPlayer().getInventory().getItemInMainHand().hasItemMeta() ||
+            if (activePlayers.contains(event.getPlayer())) return;
+            if (!event.getPlayer().getInventory().getItemInMainHand().hasItemMeta() ||
                     event.getPlayer().getInventory().getItemInMainHand().getItemMeta() == null) return;
             if (!ItemTagger.hasEnchantment(event.getPlayer().getInventory().getItemInMainHand().getItemMeta(), new NamespacedKey(MetadataHandler.PLUGIN, key)))
                 return;
@@ -58,6 +58,8 @@ public class DrillingEnchantment extends CustomEnchantment {
             this.material = originalBlock.getType();
             this.itemStack = playerItem;
             this.miningDirection = determineDirection(originalBlock.getLocation(), playerLocation);
+
+            activePlayers.add(player);
 
             switch (enchantmentLevel) {
                 case 1:
@@ -81,6 +83,8 @@ public class DrillingEnchantment extends CustomEnchantment {
                     drillLevel3(drillLevel1(originalBlock));
                     drillLevel3(drillLevel1(drillLevel1(originalBlock)));
             }
+
+            activePlayers.remove(player);
 
         }
 
@@ -117,19 +121,15 @@ public class DrillingEnchantment extends CustomEnchantment {
         }
 
         private Block processBlock(Block originalBlock, Vector addedVector) {
+            if (originalBlock == null) return null;
             Block finalBlock = originalBlock.getWorld().getBlockAt(originalBlock.getLocation().clone().add(addedVector));
             if (!this.material.equals(finalBlock.getType())) return finalBlock;
+
+            BlockBreakEvent blockBreakEvent = new BlockBreakEvent(finalBlock, player);
+            new EventCaller(blockBreakEvent);
+            if (blockBreakEvent.isCancelled()) return null;
+
             finalBlock.breakNaturally(this.itemStack);
-
-            ItemMeta itemMeta = itemStack.getItemMeta();
-            Damageable damageable = (Damageable) itemMeta;
-
-            if (itemStack.getItemMeta().hasEnchant(Enchantment.DURABILITY))
-                if (itemStack.getItemMeta().getEnchantLevel(Enchantment.DURABILITY) / 20D > ThreadLocalRandom.current().nextDouble())
-                    damageable.setDamage(damageable.getDamage() + 1);
-            itemStack.setItemMeta(itemMeta);
-            if (itemStack.getType().getMaxDurability() < damageable.getDamage())
-                player.getInventory().setItemInMainHand(null);
             return finalBlock;
         }
 
